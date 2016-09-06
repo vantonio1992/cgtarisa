@@ -18,7 +18,7 @@ import tensorflow_ae_base
 from tensorflow_ae_base import *
 import tensorflow_util
 
-import myutil
+import functions
 
 exec(open('extern_params.py').read())
 
@@ -26,25 +26,47 @@ exec(open('extern_params.py').read())
 # load sample data
 #
 
-ss = 64 # sample size
-if(not 'qqq_trn' in locals()):
-    file_input = 'qqq_trn_w{}.npy'.format(ss)
-    path_data = os.path.join(dir_input,'input_w{}'.format(ss),file_input)
-    qqq_trn = np.load(path_data)
-    print('load input from {}'.format(path_data))
+# sample size
+input_size = 64
+pool_size = 32
+output_size = 32
 
+file_input = 'risa_trn_w{}.npy'.format(ss)
+path_data = os.path.join(dir_input,'input_w{}'.format(ss),file_input)
+risa_trn = np.load(path_data)
+print('load input from {}'.format(path_data))
 
-
+nn,ny,nx,nl = risa_trn.shape
+print('nn ny nx nl',nn,ny,nx,nl)
 
 
 
 #
-# save parameters
+# setup optimizer
 #
-weight1_fin = {k:sess.run(v) for k,v in weight1.items()}
-bias1_fin = {k:sess.run(v) for k,v, in bias1.items()}
-myutil.saveObject(weight1_fin,'weight1.{}.pkl'.format(stamp))
-myutil.saveObject(bias1_fin,'bias1.{}.pkl'.format(stamp))
+risa_input = tf.placeholder(tf.float32, [None,ny,nx,nl])
 
-myutil.timestamp()
-print('stamp1 = \'{}\''.format(stamp))
+
+#change later
+risa_output = tf.placeholder(tf.float32, [None,ny,nx,nl])
+
+
+#variables
+
+risa_square = tf.Variable(tf.zeros([input_size,pool_size]))
+
+risa_root = tf.Variable(tf.zeros([pool_size,output_size]))
+
+risa_encode1 = get_encode1(risa_input)
+risa_deconv1 = get_deconv1(risa_encode1)
+mean_error = tf.reduce_mean(tf.square(risa_deconv1 - risa_input))
+local_entropy = get_local_entropy_encode1(risa_encode1)
+mean_entropy = tf.reduce_mean(local_entropy)
+optimizer = tf.train.AdagradOptimizer(learning_rate=learning_rate)
+train = optimizer.minimize(mean_error + lambda_s*mean_entropy)
+
+
+
+#start interactive session (place at the end)
+sess = tf.InteractiveSession()
+sess.run(tf.initialize_all_variables())

@@ -3,7 +3,7 @@ import sys
 import csv
 import numpy as np
 import pickle
-import myutil
+import functions
 from PIL import Image
 
 random_seed = 765
@@ -19,7 +19,7 @@ print('random_seed',random_seed)
 # nx=ny=sx=sy=32
 # na,nn=1,6400
 
-nx=ny=sx=sy=64
+nx=ny=sx=sy=256
 na,nn=1,6400
 
 # nx=ny=sx=sy=128
@@ -114,5 +114,5 @@ for aa in range(na):
     # end of for ss
 
     qqq_src = np.vstack(qqq_src)
-    np.save(os.path.join(dir_input,'qqq_trn_w{}_{}.npy'.format(nx,aa+1)), qqq_src)
+    np.save(os.path.join(dir_input,'risa_trn_w{}_{}.npy'.format(nx,aa+1)), qqq_src)
 # end of for aa

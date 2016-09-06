@@ -83,7 +83,8 @@ def feature(image):
     return np.append(blue_histogram, [green_histogram, red_histogram])
 
 
-test_file = open("test_file.txt", 'w')
-for i in range(3):
-	test_file.write("Line %d"% (i)+"\n")
-test_file.close
+def timestamp():
+    time_cur = datetime.datetime.now()
+    print('datetime:',time_cur.strftime('%m/%d %H:%M'))
+    stamp = time_cur.strftime('%Y%m%d%H%M')
+    return(stamp)

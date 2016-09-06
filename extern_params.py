@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # <nbformat>3.0</nbformat>
 
-import myutil
+import functions
 
 extern_params = {'random_seed'  : 765,
                  'stamp1'       : 'NA',
@@ -35,7 +35,7 @@ for k,v in extern_params.items():
 #       
 # current time stamp
 #
-stamp = myutil.timestamp()
+stamp = functions.timestamp()
 print('stamp = ',stamp)
 
 #
@@ -52,7 +52,7 @@ if(not 'dir_image' in locals()):
     dir_image = 'NA'
 if(os.path.exists(dir_project)):
     dir_image = dir_project
-else :
+else:
     if(os.path.exists(dir_Users)):
         dir_image = dir_Users
 
