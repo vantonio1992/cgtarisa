@@ -5,7 +5,7 @@ import decimal
 import timeit
 import cv2
 from matplotlib import pyplot as plt
-import os, math
+import os, math, datetime
 import numpy as np
 #image  = image file, size = desired size of subregion (32, in our case), path = where to place subregions (optional)
 
@@ -82,6 +82,30 @@ def feature(image):
     #return [length, width]
     return np.append(blue_histogram, [green_histogram, red_histogram])
 
+
+def get_rgb(image):
+    img = cv2.imread(image)
+    
+    length = img.shape[0]
+    width = img.shape[1]
+    classes = length*width
+    blue_vec=np.tile([0],classes)
+    green_vec=np.tile([0],classes)
+    red_vec=np.tile([0],classes)
+    
+    for row in range(length):
+        for column in range(width):
+            blue_value = img[row,column,0]
+            green_value = img[row,column,1]
+            red_value = img[row,column,2]
+            
+            blue_vec[row*width+column] = blue_value
+            green_vec[row*width+column] = green_value
+            red_vec[row*width+column] = red_value
+
+            
+    #return [length, width]
+    return np.append(blue_vec, [green_vec, red_vec])
 
 def timestamp():
     time_cur = datetime.datetime.now()

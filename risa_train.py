@@ -53,9 +53,9 @@ risa_output = tf.placeholder(tf.float32, [None,ny,nx,nl])
 
 #variables
 
-risa_square = tf.Variable(tf.zeros([input_size,pool_size]))
+risa_square = tf.Variable(tf.zeros([input_size,simple_size]))
 
-risa_root = tf.Variable(tf.zeros([pool_size,output_size]))
+risa_root = tf.constant(tf.zeros([pool_size,output_size]))
 
 risa_encode1 = get_encode1(risa_input)
 risa_deconv1 = get_deconv1(risa_encode1)
