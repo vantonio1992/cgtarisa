@@ -7,7 +7,48 @@ import cv2
 from matplotlib import pyplot as plt
 import os, math, datetime
 import numpy as np
+import tensorflow as tf
 #image  = image file, size = desired size of subregion (32, in our case), path = where to place subregions (optional)
+
+
+#pool_vec is tensor, pool_size and pool are int
+def V_output_tensor(pool_vec,pool_size,pools):
+	sess = tf.InteractiveSession()
+	x_vec = tf.placeholder()
+	segment_ids = np.zeros(pool_size)
+	for i in range(pools,pool_size,pools):
+		for pool in range(pools):
+			segment_ids[i+pool] = int(i/pools)
+
+	result = tf.segment_sum(pool_vec)
+
+	result = sess.run(tf.segment_sum(pool_vec,segment_ids))
+
+	final = np.sqrt(result)
+	return final
+
+
+#pool_vec is array, pool_size and pools are int
+def V_output(pool_vec,pool_size,pools):
+
+	segment_ids = tf.placeholder(tf.int32)
+	x_vec = tf.placeholder(tf.float32)
+
+	segment_np = np.zeros(pool_size)
+	for i in range(pools,pool_size,pools):
+		for pool in range(pools):
+			segment_np[i+pool] = int(i/pools)
+
+	result = tf.segment_sum(x_vec,segment_ids)
+	with tf.Session() as V_sess:
+		V_output = V_sess.run(result,feed_dict={x_vec:pool_vec,segment_ids:segment_np})
+
+	V_output_sqrt = np.sqrt(V_output)
+	return V_output_sqrt
+	#output is array
+
+
+
 
 
 def segment(source, path, image, size):

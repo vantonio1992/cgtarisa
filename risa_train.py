@@ -13,14 +13,18 @@ import pickle
 from PIL import Image
 
 import tensorflow as tf
-import tensorflow_ae_base
-
-from tensorflow_ae_base import *
-import tensorflow_util
-
 import functions
 
 exec(open('extern_params.py').read())
+
+
+
+#start session
+sess = tf.InteractiveSession()
+
+#define W and V from RISA
+
+W_risa = tf.Variable(tf.zeros([pool_size,input_size]))
 
 #
 # load sample data
