@@ -48,24 +48,20 @@ print('nn ny nx nl',nn,ny,nx,nl)
 #
 # setup optimizer
 #
-risa_input = tf.placeholder(tf.float32, [None,ny,nx,nl])
+risa_input = tf.placeholder(tf.float32)
 
 
 #change later
-risa_output = tf.placeholder(tf.float32, [None,ny,nx,nl])
+risa_output = tf.Variable(tf.float32)
 
 
 #variables
 
-risa_square = tf.Variable(tf.zeros([input_size,simple_size]))
+W_risa = tf.Variable(tf.zeros([input_size,pool_size]))
 
-risa_root = tf.constant(tf.zeros([pool_size,output_size]))
 
-risa_encode1 = get_encode1(risa_input)
-risa_deconv1 = get_deconv1(risa_encode1)
+invariance = tf.reduce_sum(risa_output)
 mean_error = tf.reduce_mean(tf.square(risa_deconv1 - risa_input))
-local_entropy = get_local_entropy_encode1(risa_encode1)
-mean_entropy = tf.reduce_mean(local_entropy)
 optimizer = tf.train.AdagradOptimizer(learning_rate=learning_rate)
 train = optimizer.minimize(mean_error + lambda_s*mean_entropy)
 

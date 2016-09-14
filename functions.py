@@ -28,22 +28,30 @@ def V_output_tensor(pool_vec,pool_size,pools):
 	return final
 
 
+#W is tf.matrix, input_np is standard row vector
+#W_matrix = tf.to_float(W)
+def W_output(input_np,W_np):
+
+	result = input_np.dot(W_np)
+	W_output_square = np.square(result)
+	return W_output_square
+
+#input is np.array
+
+
+
 #pool_vec is array, pool_size and pools are int
-def V_output(pool_vec,pool_size,pools):
+def risa_output(input_np,W_np,pool_size,pools):
+	pool_vec = np.square(input_np.dot(W_np))
 
-	segment_ids = tf.placeholder(tf.int32)
-	x_vec = tf.placeholder(tf.float32)
+	output_size = pool_size/pools
+	segment_ids = [0]*output_size
+	for i in range(len(segment_ids)):
+		segment_ids[i] = i*pools
 
-	segment_np = np.zeros(pool_size)
-	for i in range(pools,pool_size,pools):
-		for pool in range(pools):
-			segment_np[i+pool] = int(i/pools)
-
-	result = tf.segment_sum(x_vec,segment_ids)
-	with tf.Session() as V_sess:
-		V_output = V_sess.run(result,feed_dict={x_vec:pool_vec,segment_ids:segment_np})
-
-	V_output_sqrt = np.sqrt(V_output)
+	result = np.add.reduceat(pool_vec,segment_ids)
+	V_output_sqrt = np.sqrt(result)
+	
 	return V_output_sqrt
 	#output is array
 
