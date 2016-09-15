@@ -55,24 +55,28 @@ def risa_output(input_np,W_np,pool_size,pools):
 	return V_output_sqrt
 	#output is array
 
+def get_segments(pool_size,pools):
+	output_size = pool_size/pools
+	segment_ids = np.zeros(pool_size)
+	for i in range(pools,pool_size,pools):
+		for pool in range(pools):
+			segment_ids[i+pool] = int(i/pools)
+
+	return np.int32(segment_ids)
 
 
 
-
-def segment(source, path, image, size):
+def get_slice(source, image, size):
+	img = cv2.imread("%s/%s" % (source,image))
 	ctr = 0
 	
-	if not os.path.exists("%s/%s" % (source, path)):
-		os.makedirs("%s/%s/Original" % (source, path))
-		os.makedirs("%s/%s/Sobel_x" % (source, path))
-		os.makedirs("%s/%s/Sobel_y" % (source, path))
-		ctr = 1 #newly made folder
-		
-	img = cv2.imread("%s/%s.jpeg" %(source, image))
-	sobelx = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=5)
-	cv2.imwrite("%s/%s/%s_sobelx.jpeg" % (source, path, image), sobelx)
-	sobely = cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
-	cv2.imwrite("%s/%s/%s_sobely.jpeg" % (source, path, image), sobely)
+	if not os.path.exists("%s/%dpx" % (source, size)):
+		os.makedirs("%s/%dpx" % (source, size))
+		os.makedirs("%s/%dpx/%s" % (source, size, image))
+	else:
+		if not os.path.exists("%s/%dpx/%s" % (source, size, image)):
+			os.makedirs("%s/%dpx/%s" % (source, size, image))
+			ctr = 1 #newly made folder
 
 	length = img.shape[0]
 	width = img.shape[1]
@@ -80,29 +84,21 @@ def segment(source, path, image, size):
 	rows = int(img.shape[0]/size)
 	columns = int(img.shape[1]/size)
 	subregions = {}
-	subregions_x = {}
-	subregions_y = {}
+
 	for row in range(rows):
 		image_list = []
-		image_list_x = []
-		image_list_y = []
+
 		for column in range(columns):
 			new_image = img[(row*size):((row+1)*size),(column*size):((column+1)*size)]
-			new_image_x = sobelx[(row*size):((row+1)*size),(column*size):((column+1)*size)]
-			new_image_y = sobely[(row*size):((row+1)*size),(column*size):((column+1)*size)]
 			image_list.append(new_image)
-			image_list_x.append(new_image_x)
-			image_list_y.append(new_image_y)
+
 			if ctr == 1:
 				#where to place subregions
-				cv2.imwrite("%s/%s/Original/sr(%d,%d).jpeg" % (source, path, row, column), new_image)
-			 	cv2.imwrite("%s/%s/Sobel_x/sr(%d,%d).jpeg" % (source, path, row, column), new_image_x)
-			 	cv2.imwrite("%s/%s/Sobel_y/sr(%d,%d).jpeg" % (source, path, row, column), new_image_y)
+				cv2.imwrite("%s/%dpx/%s/sr(%d,%d).jpeg" % (source, size, image, row, column), new_image)
+
 		subregions["row %d" % (row)] = image_list
-		subregions_x["row %d" % (row)] = image_list_x
-		subregions_y["row %d" % (row)] = image_list_y
-	return {"subregions": subregions, "subregions_x": subregions_x, "subregions_y": subregions_y,
-		"dimensions": [rows, columns, length, width]}
+
+	return {"subregions": subregions, "dimensions": [rows, columns, length, width]}
 
 
 def feature(image):

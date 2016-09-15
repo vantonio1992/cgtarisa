@@ -13,7 +13,7 @@ import pickle
 from PIL import Image
 
 import tensorflow as tf
-import functions
+import functions as *
 
 exec(open('extern_params.py').read())
 
@@ -45,19 +45,29 @@ print('nn ny nx nl',nn,ny,nx,nl)
 
 
 
+#get sample input
+
+img_dict = {}
+for image in images:
+	img_list = get_slice()
+
+
 #
 # setup optimizer
 #
-risa_input = tf.placeholder(tf.float32)
 
-
-#change later
-risa_output = tf.Variable(tf.float32)
-
+#define input
+risa_in =  tf.placeholder(tf.float32)
+pool_vec = tf.placeholder(tf.float32)
+W_matrix = tf.placeholder(tf.float32)
+segment_ids = tf.constant(get_segments(pool_size,pools))
 
 #variables
 
-W_risa = tf.Variable(tf.zeros([input_size,pool_size]))
+W_matrix = tf.Variable(tf.zeros([input_size,pool_size]))
+
+sess.run(tf.initialize_all_variables())
+
 
 
 invariance = tf.reduce_sum(risa_output)
