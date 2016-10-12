@@ -73,6 +73,7 @@ def get_slice(source, image, size):
 	if not os.path.exists("%s/%dpx" % (source, size)):
 		os.makedirs("%s/%dpx" % (source, size))
 		os.makedirs("%s/%dpx/%s" % (source, size, image))
+		ctr = 1
 	else:
 		if not os.path.exists("%s/%dpx/%s" % (source, size, image)):
 			os.makedirs("%s/%dpx/%s" % (source, size, image))
@@ -128,29 +129,15 @@ def feature(image):
     return np.append(blue_histogram, [green_histogram, red_histogram])
 
 
-def get_rgb(image):
-    img = cv2.imread(image)
-    
-    length = img.shape[0]
-    width = img.shape[1]
-    classes = length*width
-    blue_vec=np.tile([0],classes)
-    green_vec=np.tile([0],classes)
-    red_vec=np.tile([0],classes)
-    
-    for row in range(length):
-        for column in range(width):
-            blue_value = img[row,column,0]
-            green_value = img[row,column,1]
-            red_value = img[row,column,2]
-            
-            blue_vec[row*width+column] = blue_value
-            green_vec[row*width+column] = green_value
-            red_vec[row*width+column] = red_value
+def get_rgb(img):
+	#img = cv2.imread(image)
 
-            
-    #return [length, width]
-    return np.append(blue_vec, [green_vec, red_vec])
+	b = img[:,:,0]
+	g = img[:,:,1]
+	r = img[:,:,2]
+
+	#return [length, width]
+	return np.array([b,g,r])
 
 def timestamp():
     time_cur = datetime.datetime.now()

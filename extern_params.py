@@ -1,10 +1,17 @@
 import functions
 
 
-input_size = 64
-pool_size = 64
+#manual input
+nx = ny = sx = sy = 64
+nl = 3
+sl = 1
+
+input_size = sx*sy*nl
+pool_size = input_size
 pools = 2
 learning_rate = 0.01
+iter_max = 8
+iter_print = 2
 
 output_size = pool_size/pools
 
