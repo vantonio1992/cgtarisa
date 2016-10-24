@@ -2,7 +2,13 @@ import functions
 
 
 #manual input
-nx = ny = sx = sy = 64
+#nx = ny = sx = sy = 64
+
+nx = 4
+ny = 6
+sx = sy = 2
+fs = 2
+nf = 8
 nl = 3
 sl = 1
 

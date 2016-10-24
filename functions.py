@@ -139,6 +139,32 @@ def get_rgb(img):
 	#return [length, width]
 	return np.array([b,g,r])
 
+def get_layered_rgb(img):
+	length = img.shape[0]
+	width = img.shape[1]
+
+	rgb_list = []
+	for row in range(length):
+		row_np = np.empty([width,3])
+		for col in range(width):
+			row_np[col][0] = img[row,col,0]
+			row_np[col][1] = img[row,col,1]
+			row_np[col][2] = img[row,col,2]
+		rgb_list.append(row_np)
+
+	return np.array(rgb_list)
+
+
+
+
+def conv2d(x, W):
+  return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+
+def max_pool_2x2(x):
+  return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+
+
+
 def timestamp():
     time_cur = datetime.datetime.now()
     print('datetime:',time_cur.strftime('%m/%d %H:%M'))

@@ -40,16 +40,22 @@ for name in images:
 data_set = np.array(data_set)
 
 
+input_tf = tf.Variable(tf.random_normal([2,ny,nx,nl]))
+filter_tf = tf.Variable(tf.random_normal([fs,fs,nl,nf]))
+
 #
 # setup optimizer
 #
 
-#define input
-risa_in =  tf.placeholder(tf.float32)
-pool_vec = tf.placeholder(tf.float32)
-output_vec = tf.placeholder(tf.float32)
+#define network
 segment_ids = tf.constant(get_segments(pool_size,pools))
-conv_input = tf.nn.conv2d(risa_in, , strides=[1, sl, sl, 1], padding='SAME')
+
+risa_in =  tf.placeholder(tf.float32, shape = [None,ny,nx,nl])
+conv_input = tf.nn.conv2d(risa_in, filter_tf, strides=[1, sl, sl, 1], padding='SAME')
+pool_vec = tf.nn.max_pool(tf.square(tf.matmul(W_matrix,conv_input)), ksize = [1,2,2,1], strides =  [1,2,2,1], padding = 'SAME')
+output_vec = tf.sqrt(tf.segment_sum(pool_vec, segment_ids))
+
+
 #variables
 
 W_matrix = tf.Variable(tf.zeros([input_size,pool_size]))
