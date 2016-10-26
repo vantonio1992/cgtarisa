@@ -6,13 +6,13 @@ import functions
 
 nx = 4
 ny = 6
-sx = sy = 2
+sx = sy = 32
 fs = 2
-nf = 8
+nf = 2
 nl = 3
 sl = 1
 
-input_size = sx*sy*nl
+input_size = sy*sy*nl
 pool_size = input_size
 pools = 2
 learning_rate = 0.01
