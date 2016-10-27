@@ -6,9 +6,10 @@ import functions
 
 nx = 4
 ny = 6
-sx = sy = 32
-fs = 2
-nf = 2
+sx = sy = 64
+fs1 = fs2 = 7
+nf1 = 4
+nf2 = 4
 nl = 3
 sl = 1
 
@@ -18,7 +19,7 @@ pools = 2
 learning_rate = 0.01
 iter_max = 8
 iter_print = 2
-
+out_val = 3
 output_size = pool_size/pools
 
 training = "Training"

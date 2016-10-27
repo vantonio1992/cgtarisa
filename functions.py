@@ -177,6 +177,9 @@ def bias_variable(shape):
   initial = tf.constant(0.1, shape=shape)
   return tf.Variable(initial)
 
+
+  
+
 def timestamp():
     time_cur = datetime.datetime.now()
     print('datetime:',time_cur.strftime('%m/%d %H:%M'))
