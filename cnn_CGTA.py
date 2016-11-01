@@ -12,8 +12,6 @@ import datetime
 from functions import *
 
 #parameters, manual input
-size = 32
-files = 2
 source = "Training"
 
 
@@ -23,21 +21,24 @@ source = "Training"
 #gathering data from images
 exec(open('extern_params.py').read())
 
-img_dict = {}
+train_dict = {}
+train_data = []
+
 for image in images:
-    img_list = get_slice(training, "%s.jpeg" % (image), sx)
-    img_dict[image] = img_list["subregions"]
-
-data_set = []
-for name in images:
     one_hot = np.zeros(3)
-    one_hot[images.index(name)] = 1
-    for row in img_dict[name]:
-        for img in img_dict[name][row]:
-            data_set.append((get_layered_rgb(img),one_hot))
+    one_hot[images.index(image)] = 1
 
-data_set = np.array(data_set)
-x_test, y_test = zip(*data_set)
+    for n in range(train_f):
+        train_list = get_slice('{}/{}'.format(training, image), '{}{}.jpeg'.format(image,n), sx)
+        train_dict['{}{}'.format(image,n)] = train_list["subregions"]
+
+        for row in train_dict['{}{}'.format(image,n)]:
+            for img in train_dict['{}{}'.format(image,n)][row]:
+                train_data.append((get_layered_rgb(img),one_hot))
+
+print len(train_data)
+
+
 
 #start of implementation
 
@@ -70,10 +71,10 @@ h_pool2 = max_pool_2x2(h_conv2)
 
 
 #densely-connected layer
-W_fc1 = weight_variable([16 * 16 * nf2, 1024])
+W_fc1 = weight_variable([output_y * output_x * nf2, 1024])
 b_fc1 = bias_variable([1024])
 
-h_pool2_flat = tf.reshape(h_pool2, [-1, 16*16*nf2])
+h_pool2_flat = tf.reshape(h_pool2, [-1, output_y*output_x*nf2])
 h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
 
@@ -103,17 +104,34 @@ sess = tf.InteractiveSession()
 sess.run(init)
 
 
+
 #input data here, read training data
 correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-for i in range(500):
-    batch_xs, batch_ys = get_batch(data_set,50)
+for i in range(1000):
+    batch_xs, batch_ys = get_batch(train_data,train_batch)
     if i%100 == 0:
         train_accuracy = accuracy.eval(feed_dict={x_image: batch_xs, y_: batch_ys, keep_prob: 1.0})
         print("step %d, training accuracy %g"%(i, train_accuracy))
     train_step.run(feed_dict={x_image: batch_xs, y_: batch_ys, keep_prob: 0.5})
 
+#cross-validation
+test_dict = {}
+test_data = []
 
- #model evaluation
+for image in images:
+    one_hot = np.zeros(3)
+    one_hot[images.index(image)] = 1
 
+    for n in range(test_f):
+        test_list = get_slice('{}/{}'.format(testing, image), '{}{}.jpeg'.format(image,n), sx)
+        test_dict['{}{}'.format(image,n)] = test_list["subregions"]
+
+        for row in test_dict['{}{}'.format(image,n)]:
+            for img in test_dict['{}{}'.format(image,n)][row]:
+                test_data.append((get_layered_rgb(img),one_hot))
+
+test_data = np.array(test_data)
+
+x_test, y_test = get_batch(test_data,test_batch)
 print("test accuracy %g"%accuracy.eval(feed_dict={x_image: x_test, y_: y_test, keep_prob: 1.0}))
