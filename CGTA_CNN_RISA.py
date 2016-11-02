@@ -11,11 +11,6 @@ import pickle, random
 import datetime
 from functions import *
 
-#parameters, manual input
-source = "Training"
-
-
-
 
 
 #gathering data from images
@@ -36,8 +31,8 @@ for image in images:
             for img in train_dict['{}{}'.format(image,n)][row]:
                 train_data.append((get_layered_rgb(img),one_hot))
 
-print len(train_data)
 
+train_data = np.array(train_data)
 
 
 #start of implementation
@@ -45,16 +40,10 @@ print len(train_data)
 #weights, bias incorporation
 y_ = tf.placeholder(tf.float32, shape=[None, out_val])
 
-W = tf.Variable(tf.zeros([input_size, out_val]))
-b = tf.Variable(tf.zeros([out_val]))
-
-#model implementation
-
-
 
 #Training start
 
-#first conv. layer
+#conv and pooling layer
 W_conv1 = weight_variable([fs1, fs1, nl, nf1])
 b_conv1 = bias_variable([nf1])
 
@@ -62,34 +51,21 @@ x_image = tf.placeholder(tf.float32, [None,sy,sx,nl])
 h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
 h_pool1 = max_pool_2x2(h_conv1)
 
+#layers for RISA
+risa_sq = tf.reshape(tf.square(h_pool1), [-1,sy/2*sx/2,nf1])
+
+W = tf.Variable(tf.zeros([sy/2*sx/2*nf2, sy/2*sx/2]))
+
+segment_ids = tf.constant(get_segments(nf1,risa_pool))
+risa_root = tf.sqrt(tf.segment_sum(tf.matmul(W,risa_sq), segment_ids))
 
 
-
-#densely-connected layer
-W_fc1 = weight_variable([output_y * output_x * nf2, 1024])
-b_fc1 = bias_variable([1024])
-
-h_pool2_flat = tf.reshape(h_pool2, [-1, output_y*output_x*nf2])
-h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
-
-
-keep_prob = tf.placeholder(tf.float32)
-h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
-
-
-#readout layer
-
-W_fc2 = weight_variable([1024, out_val])
-b_fc2 = bias_variable([out_val])
-
-y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
-
-
-#cross-entropy
-cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y_conv, y_))
-
+#cross_entropy
+output = tf.matmul(tf.matmul(tf.transpose(W),W),h_pool1)
+norm = tf.square(tf.global_norm(tf.sub(output,h_pool1)))
+error = tf.add(tf.reduce_sum(risa_root),tf.reduce_sum(tf.reduce_mean(norm)))
 #learning rate = 0.01
-train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+train_step = tf.train.AdamOptimizer(1e-4).minimize(error)
 
 #initialize the variables
 init = tf.initialize_all_variables()

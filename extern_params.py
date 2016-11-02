@@ -20,10 +20,13 @@ test_f = 1
 input_size = sy*sx*nl
 pool_size = input_size
 pools = 2
+risa_pool = 4
+
 learning_rate = 0.01
 iter_max = 8
 iter_print = 2
 out_val = 3
+
 output_y = sy/(pools*2)
 output_x = sx/(pools*2)
 

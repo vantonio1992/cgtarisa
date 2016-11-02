@@ -137,7 +137,7 @@ def get_rgb(img):
 	r = img[:,:,2]
 
 	#return [length, width]
-	return np.array([b,g,r])
+	return np.array([b,g,r])/255
 
 def get_layered_rgb(img):
 	length = img.shape[0]
@@ -152,7 +152,7 @@ def get_layered_rgb(img):
 			row_np[col][2] = img[row,col,2]
 		rgb_list.append(row_np)
 
-	return np.array(rgb_list)
+	return np.array(rgb_list)/255
 
 
 #returns a pair (x,y) where x is input list, y is output list
