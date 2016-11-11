@@ -31,14 +31,10 @@ for image in images:
             for img in train_dict['{}{}'.format(image,n)][row]:
                 train_data.append((get_layered_rgb(img),one_hot))
 
-
 train_data = np.array(train_data)
 
 
 #start of implementation
-
-#weights, bias incorporation
-y_ = tf.placeholder(tf.float32, shape=[None, out_val])
 
 
 #Training start
@@ -51,21 +47,18 @@ x_image = tf.placeholder(tf.float32, [None,sy,sx,nl])
 h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
 h_pool1 = max_pool_2x2(h_conv1)
 
-#layers for RISA
-risa_sq = tf.reshape(tf.square(h_pool1), [-1,sy/2*sx/2,nf1])
+##layers for RISA
 
-W = tf.Variable(tf.zeros([sy/2*sx/2*nf2, sy/2*sx/2]))
+#square
+risa_in = tf.square(h_pool1)
+W_risa = weight_variable([sy/2,sx/2,nf1,nf1])
+risa_sq = tf.nn.relu(conv2d(risa_in, W_risa))
+risa_sq_flat = tf.reshape(risa_sq, [-1,nf1,sy/2*sx/2])
 
+#sqrt
+risa_pre_tf = tf.placeholder(tf.float32, shape=[nf1, sy/2*sx/2])
 segment_ids = tf.constant(get_segments(nf1,risa_pool))
-risa_root = tf.sqrt(tf.segment_sum(tf.matmul(W,risa_sq), segment_ids))
-
-
-#cross_entropy
-output = tf.matmul(tf.matmul(tf.transpose(W),W),h_pool1)
-norm = tf.square(tf.global_norm(tf.sub(output,h_pool1)))
-error = tf.add(tf.reduce_sum(risa_root),tf.reduce_sum(tf.reduce_mean(norm)))
-#learning rate = 0.01
-train_step = tf.train.AdamOptimizer(1e-4).minimize(error)
+risa_root = tf.sqrt(tf.segment_sum(risa_pre_tf, segment_ids))
 
 #initialize the variables
 init = tf.initialize_all_variables()
@@ -74,35 +67,44 @@ init = tf.initialize_all_variables()
 sess = tf.InteractiveSession()
 sess.run(init)
 
+#W transpose
+W_risa_t = []
+
+W_risa_np = W_risa.eval()
+for a in W_risa_np:
+    temp = []
+    for b in a:
+        temp.append(np.transpose(b))
+    W_risa_t.append(temp)
+
+W_risa_t = tf.constant(np.array(W_risa_t))
+
+#risa 2nd layer
+batch_xs, batch_ys = get_batch(train_data,train_batch)
+
+risa_sq_np = risa_sq_flat.eval(feed_dict = {x_image: batch_xs})
+
+risa_sqrt = []
+for img in risa_sq_np:
+    risa_sqrt.append(risa_root.eval(feed_dict = {risa_pre_tf: img}))
+
+risa_sqrt = np.array(risa_sqrt)
+
+
+#cross_entropy
+output = tf.nn.relu(conv2d(h_pool1, W_risa))
+output_t = tf.nn.relu(conv2d(output, W_risa_t))
+norm = tf.square(tf.global_norm([tf.sub(output_t,h_pool1)]))
+error = tf.add(tf.reduce_sum(risa_root),tf.reduce_sum(tf.reduce_mean(norm)))
+#learning rate = 0.01
+train_step = tf.train.AdamOptimizer(1e-4).minimize(error)
 
 
 #input data here, read training data
-correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
 for i in range(1000):
     batch_xs, batch_ys = get_batch(train_data,train_batch)
     if i%100 == 0:
-        train_accuracy = accuracy.eval(feed_dict={x_image: batch_xs, y_: batch_ys, keep_prob: 1.0})
-        print("step %d, training accuracy %g"%(i, train_accuracy))
-    train_step.run(feed_dict={x_image: batch_xs, y_: batch_ys, keep_prob: 0.5})
-
-#cross-validation
-test_dict = {}
-test_data = []
-
-for image in images:
-    one_hot = np.zeros(3)
-    one_hot[images.index(image)] = 1
-
-    for n in range(test_f):
-        test_list = get_slice('{}/{}'.format(testing, image), '{}{}.jpeg'.format(image,n), sx)
-        test_dict['{}{}'.format(image,n)] = test_list["subregions"]
-
-        for row in test_dict['{}{}'.format(image,n)]:
-            for img in test_dict['{}{}'.format(image,n)][row]:
-                test_data.append((get_layered_rgb(img),one_hot))
-
-test_data = np.array(test_data)
-
-x_test, y_test = get_batch(test_data,test_batch)
-print("test accuracy %g"%accuracy.eval(feed_dict={x_image: x_test, y_: y_test, keep_prob: 1.0}))
+        train_error = error.eval(feed_dict={x_image: batch_xs})
+        print("step %d, training error %g"%(i, train_error))
+    train_step.run(feed_dict={x_image: batch_xs, keep_prob: 0.5})
