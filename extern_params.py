@@ -22,7 +22,8 @@ pool_size = input_size
 pools = 2
 risa_pool = 4
 
-learning_rate = 0.01
+learning_rate = 1e-4
+lambda_r = np.array([0.01])
 iter_max = 8
 iter_print = 2
 out_val = 3
