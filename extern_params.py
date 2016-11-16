@@ -6,9 +6,9 @@ import functions
 
 nx = 4
 ny = 6
-sx = sy = 32
+sx = sy = 64
 fs1 = fs2 = 7
-nf1 = 8
+nf1 = 16
 nf2 = 16
 nl = 3
 sl = 1

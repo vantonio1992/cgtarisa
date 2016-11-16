@@ -68,7 +68,7 @@ risa_out = tf.placeholder(tf.float32, shape = [None,nf1/risa_pool, sy/2*sx/2])
 #error check
 
 output = tf.nn.relu(conv2d(h_pool1, W_risa))
-output_t = tf.nn.relu(conv2d(output, W_risa_t))
+output_t = tf.nn.relu(conv2d(output, W_t))
 
 norm = tf.reduce_mean(tf.square(tf.global_norm([tf.sub(output_t,h_pool1)])))
 error = tf.add(tf.reduce_sum(risa_out),tf.mul(tf.to_float(tf.constant(lambda_r)),norm))
@@ -81,7 +81,7 @@ sess = tf.InteractiveSession()
 sess.run(init)
 
 #W transpose
-W_T_np = []
+W_t_np = []
 
 W_risa_np = W_risa.eval()
 for a in W_risa_np:
@@ -104,10 +104,9 @@ for img in risa_sq_np:
 risa_sqrt = np.array(risa_sqrt)
 
 #input data here, read training data
-
 for i in range(1000):
     batch_xs, batch_ys = get_batch(train_data,train_batch)
     if i%100 == 0:
-        train_error = error.eval(feed_dict = {x_image: batch_xs, risa_out: risa_sqrt, W_t: W_t_np, keep_prob: 1.0})
+        train_error = error.eval(feed_dict = {x_image: batch_xs, risa_out: risa_sqrt, W_t: W_t_np})
         print("step %d, training error %g"%(i, train_error))
     train_step.run(feed_dict={x_image: batch_xs, risa_out: risa_sqrt, W_t: W_t_np, keep_prob: 0.5})
