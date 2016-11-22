@@ -64,19 +64,28 @@ b = tf.reshape(h_deconv1,[-1,nf1,sy/2*sx/2])
 c = tf.tile(b,tf.to_int32(tf.constant(np.array([1,1,2]))))
 d = tf.reshape(c,[-1,sy/2,sx])
 e = tf.concat(2,[d,d])
-x_unpool = tf.reshape(e, [-1,sy,sx,nf1])
+f = tf.reshape(e, [-1,nf1,sy,sx])
+x_unpool = tf.transpose(f, perm = [0,2,3,1])
 
-#deconv layer 2
 
+#deconv 2
 h_deconv2 = tf.nn.relu(conv2d(x_unpool, W_conv1_tr))
-shape = tf.shape(h_deconv2)
+
+norm = tf.reduce_mean(tf.global_norm([tf.sub(h_deconv2,x_image)]))
+train_step = tf.train.AdamOptimizer(learning_rate).minimize(norm)
+#initialize the variables
+init = tf.initialize_all_variables()
 
 #launch Session
-init = tf.initialize_all_variables()
 sess = tf.InteractiveSession()
 sess.run(init)
 
+#input data here, read training data
+print("autoencoder with {}x{} input".format(sy,sx))
 
-#testing
-batch_xs, batch_ys = get_batch(train_data,train_batch)
-print shape.eval(feed_dict = {x_image: batch_xs})
+for i in range(1000):
+    batch_xs, batch_ys = get_batch(train_data,train_batch)
+    if i%100 == 0:
+        train_error = norm.eval(feed_dict = {x_image: batch_xs, keep_prob: 1.0})
+        print("step %d, training error %g"%(i, train_error))
+    train_step.run(feed_dict={x_image: batch_xs, keep_prob: 0.5})

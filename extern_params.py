@@ -8,8 +8,8 @@ nx = 4
 ny = 6
 sx = sy = 64
 fs1 = fs2 = 7
-nf1 = 16
-nf2 = 16
+nf1 = 32
+nf2 = 8
 nl = 3
 sl = 1
 train_f = 6

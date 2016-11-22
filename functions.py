@@ -161,6 +161,9 @@ def get_batch(data, num):
 	return x,y
 
 
+def deconv2d(x, W, output_shape):
+  return tf.nn.conv2d_transpose(x, W, output_shape = tf.constant(np.array(output_shape)), strides=[1, 1, 1, 1], padding='SAME')
+
 def conv2d(x, W):
   return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
@@ -176,8 +179,6 @@ def weight_variable(shape):
 def bias_variable(shape):
   initial = tf.constant(0.1, shape=shape)
   return tf.Variable(initial)
-
-
   
 
 def timestamp():
