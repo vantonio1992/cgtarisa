@@ -1,5 +1,3 @@
-#standard packages
-
 from PIL import Image
 
 import numpy as np
@@ -11,72 +9,28 @@ import datetime
 from functions import *
 
 
+train_batch = 1
+nf1 = 2
+sy = 3
+sx = 3
 
-#gathering data from images
-exec(open('extern_params.py').read())
+x = np.array([[[[0,1,2],[3,4,5],[6,7,8]],[[9,10,11],[12,13,14],[15,16,17]]]])
 
-train_dict = {}
-train_data = []
+#print np.shape(x)
 
-for image in images:
-    one_hot = np.zeros(3)
-    one_hot[images.index(image)] = 1
+a = tf.placeholder(tf.float32)
+b = tf.reshape(a,[-1,nf1,sy*sx,1])
+c = tf.tile(b,tf.to_int32(tf.constant(np.array([1,1,1,2]))))
+d = tf.reshape(c,[-1,nf1,sy,sx*2])
+e = tf.tile(d,tf.to_int32(tf.constant(np.array([1,1,1,2]))))
+x_unpool = tf.reshape(e, [-1,nf1,sy*2,sx*2])
 
-    for n in range(train_f):
-        train_list = get_slice('{}/{}'.format(training, image), '{}{}.jpeg'.format(image,n), sx)
-        train_dict['{}{}'.format(image,n)] = train_list["subregions"]
-
-        for row in train_dict['{}{}'.format(image,n)]:
-            for img in train_dict['{}{}'.format(image,n)][row]:
-                train_data.append((get_layered_rgb(img),one_hot))
-
-train_data = np.array(train_data)
-
-
-#start of implementation
-
-
-#Training start
-
-#general placeholders
-keep_prob = tf.placeholder(tf.float32)
-x_image = tf.placeholder(tf.float32, [None,sy,sx,nl])
-
-##conv, pooling, conv
-
-#conv1 and pooling layer
-W_conv1 = weight_variable([fs1, fs1, nl, nf1])
-W_conv1_tr = tf.transpose(W_conv1, perm = [0,1,3,2])
-h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1))
-h_pool1 = max_pool_2x2(h_conv1)
-
-#conv2
-W_conv2 = weight_variable([sy/2,sx/2,nf1,nf2])
-W_conv2_tr = tf.transpose(W_conv2, perm = [0,1,3,2])
-h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2))
-
-
-##deconvolution, unpooling
-h_deconv1 = tf.nn.relu(conv2d(h_conv2, W_conv2_tr))
-
-#unpooling
-b = tf.reshape(h_deconv1,[-1,nf1,sy/2*sx/2])
-c = tf.tile(b,tf.to_int32(tf.constant(np.array([1,1,2]))))
-d = tf.reshape(c,[-1,sy/2,sx])
-e = tf.concat(2,[d,d])
-x_unpool = tf.reshape(e, [-1,sy,sx,nf1])
-
-#deconv layer 2
-
-h_deconv2 = tf.nn.relu(conv2d(x_unpool, W_conv1_tr))
-shape = tf.shape(h_deconv2)
+init = tf.initialize_all_variables()
 
 #launch Session
-init = tf.initialize_all_variables()
 sess = tf.InteractiveSession()
 sess.run(init)
 
 
-#testing
-batch_xs, batch_ys = get_batch(train_data,train_batch)
-print shape.eval(feed_dict = {x_image: batch_xs})
+print x_unpool.eval(feed_dict = {a: x})
+

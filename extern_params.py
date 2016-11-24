@@ -9,11 +9,11 @@ ny = 6
 sx = sy = 64
 fs1 = fs2 = 7
 nf1 = 32
-nf2 = 8
+nf2 = 64
 nl = 3
 sl = 1
 train_f = 6
-train_batch = 40
+train_batch = 2
 test_batch = 192
 test_f = 1
 
