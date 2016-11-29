@@ -1,6 +1,3 @@
-import functions
-
-
 #manual input
 #nx = ny = sx = sy = 64
 
@@ -8,15 +5,16 @@ nx = 4
 ny = 6
 sx = sy = 64
 fs1 = fs2 = 7
-nf1 = 32
-nf2 = 64
+nf1 = 16
+nf2 = nf1*4
 nl = 3
 sl = 1
 train_f = 6
-train_batch = 2
+train_batch = 40
 test_batch = 192
 test_f = 1
-
+maxiter = 300
+moditer = 25
 input_size = sy*sx*nl
 pool_size = input_size
 pools = 2
@@ -36,3 +34,5 @@ training = "Training"
 testing = "Testing"
 
 images = ["PI", "PP", "TRU"]
+
+encode_type = ["CNN_ae", "RISA"]

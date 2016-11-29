@@ -8,29 +8,42 @@ import pickle, random
 import datetime
 from functions import *
 
-
 train_batch = 1
 nf1 = 2
-sy = 3
-sx = 3
+sy = 4
+sx = 4
 
-x = np.array([[[[0,1,2],[3,4,5],[6,7,8]],[[9,10,11],[12,13,14],[15,16,17]]]])
+def sample(train_batch,nf1,sy,sx):
+	x = []
+	for data in range(train_batch):
+		temp0 = []
+		for i in range(nf1):
+			temp1 = []
+			for j in range(sy):
+				temp1.append(range(sy*sx*i+sx*j,sy*sx*i+sx*j+sx))
+			temp0.append(temp1)
+		x.append(temp0)
 
-#print np.shape(x)
+	return np.array(x)
 
-a = tf.placeholder(tf.float32)
-b = tf.reshape(a,[-1,nf1,sy*sx,1])
-c = tf.tile(b,tf.to_int32(tf.constant(np.array([1,1,1,2]))))
-d = tf.reshape(c,[-1,nf1,sy,sx*2])
-e = tf.tile(d,tf.to_int32(tf.constant(np.array([1,1,1,2]))))
-x_unpool = tf.reshape(e, [-1,nf1,sy*2,sx*2])
+x = sample(train_batch,nf1,sy,sx)
 
-init = tf.initialize_all_variables()
-
-#launch Session
-sess = tf.InteractiveSession()
-sess.run(init)
+print x
 
 
-print x_unpool.eval(feed_dict = {a: x})
+print np.shape(get_sum_2x2(x,train_batch,nf1,sy,sx))
+
+# a = tf.placeholder(tf.float32, shape = [train_batch,nf1,sy,sx])
+# #split(split_dum, num_split, tens)
+
+
+# init = tf.initialize_all_variables()
+
+# #launch Session
+# sess = tf.InteractiveSession()
+# sess.run(init)
+
+# print b.eval(feed_dict = {a: sample(train_batch,nf1,sy,sx)})
+
+# print c.eval(feed_dict = {a: sample(train_batch,nf1,sy,sx)})
 

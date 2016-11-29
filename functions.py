@@ -55,7 +55,7 @@ def risa_output(input_np,W_np,pool_size,pools):
 	return V_output_sqrt
 	#output is array
 
-def get_segments(pool_size,pools):
+def get_segments(pool_size, pools):
 	output_size = pool_size/pools
 	segment_ids = np.zeros(pool_size)
 	for i in range(pools,pool_size,pools):
@@ -159,6 +159,28 @@ def get_layered_rgb(img):
 def get_batch(data, num):
 	x, y = zip(*random.sample(data,num))
 	return x,y
+
+def get_sum_2x2(x,train_batch,nf,sy,sx):
+	new_x = []
+	for i in range(train_batch):
+		temp0 = []
+		for j in range(nf):
+			temp1 = []
+			for k in range(0,sy,2):
+				temp2 = []
+				for l in range(0,sx,2):
+					temp2.append(np.sum(x[i,j,k:k+2,l:l+2]))
+				temp1.append(temp2)
+			temp0.append(temp1)
+		new_x.append(temp0)
+	return np.array(new_x)
+
+
+
+def get_risa_segments(sy,sx):
+	a = np.arange(sy/2*sx/2).reshape((sy/2*sx/2,1))
+	b = np.tile(a, 2).reshape(2,sx)
+	return np.tile(b,2).reshape(sy,sx).flatten()
 
 
 def deconv2d(x, W, output_shape):

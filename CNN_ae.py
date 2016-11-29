@@ -85,9 +85,18 @@ sess.run(init)
 #input data here, read training data
 print("(autoencoder with {}x{} input)".format(sy,sx))
 
-for i in range(1000):
+error_list = []
+for i in range(maxiter):
     batch_xs, batch_ys = get_batch(train_data,train_batch)
-    if i%100 == 0:
+    if i%moditer == 0:
         train_error = norm.eval(feed_dict = {x_image: batch_xs, keep_prob: 1.0})
+        error_list.append(train_error)
         print("step %d, training error %g"%(i, train_error))
     train_step.run(feed_dict={x_image: batch_xs, keep_prob: 0.5})
+
+
+error_file = open("{}_error_{}x{}.txt".format("CNN_ae",sy,sx), 'w')
+
+for error in error_list:
+    error_file .write("{}\n".format(error))
+error_file.close
