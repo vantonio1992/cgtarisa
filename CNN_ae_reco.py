@@ -1,15 +1,15 @@
 #standard packages
 
 from PIL import Image
-
 import numpy as np
 import os
-import tensorflow as tf
 import timeit
 import pickle, random
 import datetime
 from functions import *
-
+from matplotlib import pyplot as plt
+import cv2
+import tensorflow as tf
 
 
 #gathering data from images
@@ -19,31 +19,28 @@ train_dict = {}
 train_data = []
 
 for image in images:
-    one_hot = np.zeros(3)
-    one_hot[images.index(image)] = 1
-
     for n in range(train_f):
         train_list = get_slice('{}/{}'.format(training, image), '{}{}.jpeg'.format(image,n), sx)
         train_dict['{}{}'.format(image,n)] = train_list["subregions"]
 
         for row in train_dict['{}{}'.format(image,n)]:
             for img in train_dict['{}{}'.format(image,n)][row]:
-                train_data.append(img/float(255))
+                # train_data.append(get_layered_rgb(img))
+                train_data.append(img)
 
 train_data = np.array(train_data)
 
 
-#start of implementation
+#getting sample (not yet /255)
+input_rgb = np.array(random.sample(train_data,image_reco))
+
+input_tf = input_rgb/float(255)
 
 
-#Training start
+#network
 
-#general placeholders
 keep_prob = tf.placeholder(tf.float32)
 x_image = tf.placeholder(tf.float32, [None,sy,sx,nl])
-
-##conv, pooling, conv
-
 #conv1 and pooling layer
 W_conv1 = weight_variable([fs1, fs1, nl, nf1])
 # b_conv1 = bias_variable([nf1])
@@ -71,10 +68,7 @@ x_unpool = tf.reshape(e, [-1,sy,sx,nf1])
 
 #deconv 2
 h_deconv2 = tf.nn.relu(conv2d(x_unpool, W_conv1_tr))
-# h_deconv2_drop = tf.nn.dropout(h_deconv2, keep_prob)
 
-norm = tf.reduce_mean(tf.global_norm([tf.sub(h_deconv2,x_image)]))
-train_step = tf.train.AdamOptimizer(learning_rate).minimize(norm)
 #initialize the variables
 init = tf.initialize_all_variables()
 
@@ -87,32 +81,9 @@ sess = tf.InteractiveSession()
 sess.run(init)
 
 #input data here, read training data
-print("(autoencoder with {}x{} input)".format(sy,sx))
-
-saver.restore(sess, "Weights/{}_weights.ckpt".format('CNN_ae'))
-error_list = []
-for i in range(maxiter):
-    batch_xs = get_batch_x(train_data,train_batch)
-    if i%moditer == 0:
-        train_error = norm.eval(feed_dict = {x_image: batch_xs, keep_prob: 1.0})
-        error_list.append(train_error)
-        print("step %d, training error %g"%(i, train_error))
-    train_step.run(feed_dict={x_image: batch_xs, keep_prob: 0.5})
-
-
-error_file = open("Errors/{}_error_{}x{}.txt".format("CNN_ae",sy,sx), 'w')
-
-for error in error_list:
-    error_file .write("{}\n".format(error))
-error_file.close
-
-saver.save(sess, "Weights/{}_weights.ckpt".format('CNN_ae'))
-
-
-
-#confirm plotting
-print('start reconstruction')
-input_rgb = np.array(random.sample(train_data,image_reco))*float(255)
-input_tf = input_rgb/float(255)
-output_rgb = h_deconv2.eval(feed_dict={x_image: input_rgb/float(255)})
+print("(verification of {} with {}x{} input)".format('CNN_ae',sy,sx))
+saver.restore(sess, "{}_weights.ckpt".format('CNN_ae'))
+output_rgb = h_deconv2.eval(feed_dict={x_image: input_tf})
+print('end')
 showplot(input_rgb,output_rgb, sy, sx, image_reco)
+

@@ -84,9 +84,9 @@ print("RISA Network with {}x{} input".format(sy,sx))
 error_list = []
 for i in range(maxiter):
     batch_xs, batch_ys = get_batch(train_data,train_batch)
+    pre_root = risa_pre_tf.eval(feed_dict = {x_image: batch_xs})
+    post_root = get_sum_2x2(pre_root,train_batch,nf2,sy/2,sx/2)
     if i%moditer == 0:
-        pre_root = risa_pre_tf.eval(feed_dict = {x_image: batch_xs})
-        post_root = get_sum_2x2(pre_root,train_batch,nf2,sy/2,sx/2)
         train_error = error.eval(feed_dict = {x_image: batch_xs, risa_post_tf: post_root})
         error_list.append(train_error)
         print("step %d, training error %g"%(i, train_error))

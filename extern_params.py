@@ -12,6 +12,8 @@ sl = 1
 train_f = 6
 train_batch = 40
 test_batch = 192
+
+image_reco = 6
 test_f = 1
 maxiter = 300
 moditer = 25
