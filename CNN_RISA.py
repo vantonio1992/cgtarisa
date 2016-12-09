@@ -12,23 +12,24 @@ from functions import *
 
 
 
-#gathering data from images
+
 exec(open('extern_params.py').read())
+
+#gathering data from images
+
+net = '{}_{}_{} ({})'.format('RISA',sy,fs1,timestamp())
 
 train_dict = {}
 train_data = []
 
 for image in images:
-    one_hot = np.zeros(3)
-    one_hot[images.index(image)] = 1
-
     for n in range(train_f):
         train_list = get_slice('{}/{}'.format(training, image), '{}{}.jpeg'.format(image,n), sx)
         train_dict['{}{}'.format(image,n)] = train_list["subregions"]
 
         for row in train_dict['{}{}'.format(image,n)]:
             for img in train_dict['{}{}'.format(image,n)][row]:
-                train_data.append((get_layered_rgb(img),one_hot))
+                train_data.append(img/float(255))
 
 train_data = np.array(train_data)
 
@@ -42,59 +43,87 @@ train_data = np.array(train_data)
 keep_prob = tf.placeholder(tf.float32)
 x_image = tf.placeholder(tf.float32, [None,sy,sx,nl])
 
-#conv and pooling layer
-W_conv1 = weight_variable([fs1, fs1, nl, nf1])
-# b_conv1 = bias_variable([nf1])
+##conv, pooling, conv
 
-h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1))
-h_pool1 = max_pool_2x2(h_conv1)
+#conv1 and pooling layer
+W_risa1 = weight_variable([fs1, fs1, nl, nf1])
+h_conv1 = tf.nn.relu(conv2d(x_image, W_risa1))
 
-##layers for RISA
+#RISA
 
-#square
-W_risa = weight_variable([sy/2,sx/2,nf1,nf2])
-W_t = tf.transpose(W_risa, perm = [0,1,3,2])
-risa_pre_sq = tf.nn.relu(conv2d(h_pool1, W_risa))
-risa_sq = tf.square(risa_pre_sq)
+risa_sq = tf.square(h_conv1)
 
 #sqrt
-risa_pre_tf = tf.transpose(risa_sq, perm = [0,3,1,2])
+segment_ids = tf.constant(get_segments(nf1,4))
+risa_sq_tr = tf.transpose(risa_sq, perm = [3,0,1,2])
+risa_sum = tf.segment_sum(risa_sq_tr, segment_ids)
+risa_root = tf.sqrt(risa_sum)
 
-risa_post_tf = tf.placeholder(tf.float32, [None,nf2,sy/4,sx/4])
-risa_root = tf.sqrt(risa_post_tf)
 
-#error check
+#reverse process
 
-output_t = tf.nn.relu(conv2d(risa_pre_sq, W_t))
-# output_drop = tf.nn.dropout(output_t, keep_prob)
+#unpool
+a = tf.transpose(risa_root, perm = [1,2,3,0])
+b = tf.reshape(a, [train_batch,sy,sx*nf1/4,1])
+c = tf.tile(b,tf.to_int32(tf.constant(np.array([1,1,1,4]))))
+risa_unpool = tf.reshape(c, [train_batch,sy,sx,nf1])
 
-norm = tf.reduce_mean(tf.square(tf.global_norm([tf.sub(output_t,h_pool1)])))
+## error check
+# deconv_compute
+
+output_shape1 = [train_batch,sy,sx,nl]
+h_deconv_c = tf.nn.relu(conv2d_transpose(h_conv1,W_risa1,output_shape1))
+
+norm = tf.reduce_mean(tf.global_norm([h_deconv_c - x_image]))
 error = tf.add(tf.reduce_sum(risa_root),tf.mul(tf.to_float(tf.constant(lambda_r)),norm))
 train_step = tf.train.AdamOptimizer(learning_rate).minimize(error)
+
+
+#deconv_ae
+h_deconv_ae = tf.nn.relu(conv2d_transpose(risa_unpool,W_risa1,output_shape1))
+
+
 #initialize the variables
 init = tf.initialize_all_variables()
+
+#save and restore variables
+saver = tf.train.Saver()
+
 
 #launch Session
 sess = tf.InteractiveSession()
 sess.run(init)
 
 #input data here, read training data
-print("RISA Network with {}x{} input".format(sy,sx))
+print("({} simulation)".format(net,sy,sx))
+
+if switch == 1:
+    saver.restore(sess, "Weights/{}_weights.ckpt".format(net))
+
 
 error_list = []
 for i in range(maxiter):
-    batch_xs, batch_ys = get_batch(train_data,train_batch)
-    pre_root = risa_pre_tf.eval(feed_dict = {x_image: batch_xs})
-    post_root = get_sum_2x2(pre_root,train_batch,nf2,sy/2,sx/2)
+    batch_xs = get_batch_x(train_data,train_batch)
     if i%moditer == 0:
-        train_error = error.eval(feed_dict = {x_image: batch_xs, risa_post_tf: post_root})
+        train_error = error.eval(feed_dict = {x_image: batch_xs, keep_prob: 1.0})
         error_list.append(train_error)
         print("step %d, training error %g"%(i, train_error))
     train_step.run(feed_dict={x_image: batch_xs, keep_prob: 0.5})
 
 
-error_file = open("{}_error_{}x{}.txt".format("RISA",sy,sx), 'w')
+error_file = open("Errors/error_{}.txt".format(net), 'w')
 
 for error in error_list:
     error_file .write("{}\n".format(error))
 error_file.close
+
+
+
+saver.save(sess, "Weights/weights_{}.ckpt".format(net))
+
+#confirm plotting
+print('start reconstruction')
+input_tf = get_batch_x(train_data,train_batch)
+input_rgb = input_tf*255
+output_rgb = h_deconv_ae.eval(feed_dict={x_image: input_tf})
+showplot(input_rgb,output_rgb, sy, sx, train_batch, image_reco, net)

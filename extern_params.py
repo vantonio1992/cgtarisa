@@ -1,35 +1,28 @@
 #manual input
 #nx = ny = sx = sy = 64
 
-nx = 4
-ny = 6
+
+switch = 0
 sx = sy = 64
-fs1 = fs2 = 7
-nf1 = 16
-nf2 = nf1*4
+fs1 = fs2 = 5
+nf1 = 12
+nf2 = 24
 nl = 3
-sl = 1
 train_f = 6
 train_batch = 40
 test_batch = 192
 
 image_reco = 6
 test_f = 1
-maxiter = 300
+maxiter = 150
 moditer = 25
 input_size = sy*sx*nl
-pool_size = input_size
-pools = 2
 risa_pool = 4
 
-learning_rate = 1e-4
-lambda_r = np.array([0.01])
-iter_max = 8
-iter_print = 2
+learning_rate = 0.01
+lambda_r = np.array([1e-4])
 out_val = 3
 
-output_y = sy/(pools*2)
-output_x = sx/(pools*2)
 
 training = "Training"
 
@@ -37,4 +30,4 @@ testing = "Testing"
 
 images = ["PI", "PP", "TRU"]
 
-encode_type = ["CNN_ae", "RISA"]
+encode_type = ["CNN_ae", "CNN_ae_bias", "RISA", "CNN_Hybrid"]

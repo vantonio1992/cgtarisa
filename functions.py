@@ -10,6 +10,17 @@ import numpy as np
 import tensorflow as tf
 #image  = image file, size = desired size of subregion (32, in our case), path = where to place subregions (optional)
 
+def sample(train_batch,sy,sx,nl):
+	sample = []
+	for i in range(train_batch):
+		temp0 = []
+		for j in range(sy):
+			temp1 = []
+			for k in range(sx):
+				temp1.append(range(i*sy*sx*nl+j*sx*nl+k*nl,i*sy*sx*nl+j*sx*nl+k*nl+nl))
+			temp0.append(temp1)
+		sample.append(temp0)
+	return np.array(sample)
 
 def get_segments(pool_size, pools):
 	output_size = pool_size/pools
@@ -65,8 +76,7 @@ def get_batch(data, num):
 	return x,y
 
 def get_batch_x(data, num):
-	x = np.array(random.sample(data,num))
-	return x
+	return np.array(random.sample(data,num))
 
 def get_sum_2x2(x,train_batch,nf,sy,sx):
 	new_x = []
@@ -84,18 +94,11 @@ def get_sum_2x2(x,train_batch,nf,sy,sx):
 	return np.array(new_x)
 
 
-
-def get_risa_segments(sy,sx):
-	a = np.arange(sy/2*sx/2).reshape((sy/2*sx/2,1))
-	b = np.tile(a, 2).reshape(2,sx)
-	return np.tile(b,2).reshape(sy,sx).flatten()
-
-
-def deconv2d(x, W, output_shape):
-  return tf.nn.conv2d_transpose(x, W, output_shape = tf.constant(np.array(output_shape)), strides=[1, 1, 1, 1], padding='SAME')
-
 def conv2d(x, W):
-  return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+	return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+
+def conv2d_transpose(x, W, output_shape):
+	return tf.nn.conv2d_transpose(x, W, output_shape, strides=[1, 1, 1, 1], padding='SAME')
 
 def max_pool_2x2(x):
   return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
@@ -113,23 +116,42 @@ def bias_variable(shape):
 
 def timestamp():
     time_cur = datetime.datetime.now()
-    print('datetime:',time_cur.strftime('%m/%d %H:%M'))
-    stamp = time_cur.strftime('%Y%m%d%H%M')
-    return(stamp)
+    return time_cur.strftime('%Y%m%d%H%M')
+    
 
-#input size = output size
-def showplot(input_rgb,output_rgb, sy, sx, image_reco):
+def risa_segment_sum():
+	segment_ids = tf.constant(get_segments(nl,4))
+	x = tf.placeholder(tf.float32, shape = [train_batch,sy,sx,nl])
+	x_tr = tf.transpose(x, perm = [0,3,1,2])
+	y = tf.segment_sum(x_tr, segment_ids)
+	y_fin = tf.transpose(y, perm = [0,2,3,1])
 
+	return y_fin
+
+def unpool_2x2(pooled,py,px,pf):
+	a = tf.transpose(pooled, perm = [0,3,1,2])
+	b = tf.reshape(a,[-1,pf,py*px,1])
+	c = tf.tile(b,tf.to_int32(tf.constant(np.array([1,1,1,2]))))
+	d = tf.reshape(c,[-1,pf,py,px*2])
+	e = tf.tile(d,tf.to_int32(tf.constant(np.array([1,1,1,2]))))
+	f = tf.reshape(e, [-1,pf,py*2,px*2])
+	x_unpool = tf.transpose(f,perm = [0,2,3,1])
+	return x_unpool
+
+def showplot(input_rgb,output_rgb, sy, sx, train_batch, image_reco, in_type):
+	ints = random.sample(range(train_batch), image_reco)
+	
 	#orig. images concatenated
 	orig_image = np.zeros((sy,sx*image_reco, 3), np.uint8)
 	for i in range(image_reco):
-		orig_image[:,sx*i:sx*(i+1)] = input_rgb[i]
+		index = ints[i]
+		orig_image[:,sx*i:sx*(i+1)] = input_rgb[index]
 	
 	#new images concatenated
-	group = np.array([output_rgb[0]])
+	group = np.array([output_rgb[ints[0]]])
 	
-	for img in output_rgb[1:]:
-		group = np.concatenate((group,np.array([img])), axis = 2)
+	for i in ints[1:]:
+		group = np.concatenate((group,np.array([output_rgb[i]])), axis = 2)
 
 	new_image = np.zeros((sy,sx*image_reco, 3), np.uint8)
 	new_image[:,:] = group*255
@@ -145,4 +167,12 @@ def showplot(input_rgb,output_rgb, sy, sx, image_reco):
 	plt.imshow(new_image, 'gray')
 	plt.xticks([]), plt.yticks([])
 
+	plt.savefig('Images/{}.png'.format(in_type))
 	plt.show()
+
+def save_pickle(input_rgb, output_rgb):
+	in_text = open('Sample/input_{}.pkl'.format(timestamp()), 'wb')
+	pickle.dump(input_rgb, in_text)
+
+	out_text = open('Sample/output_{}.pkl'.format(timestamp()), 'wb')
+	pickle.dump(output_rgb, out_text)
