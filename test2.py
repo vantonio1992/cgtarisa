@@ -10,18 +10,10 @@ import pickle, random
 import datetime
 from functions import *
 
+RISA_W1 = open('Sample/RISA_W1.pkl', 'rb')
+RISA_b1 = open('Sample/RISA_b1.pkl', 'rb')
+W_risa1 = tf.constant(pickle.load(RISA_W1))
+b_risa1 = tf.constant(pickle.load(RISA_b1))
 
-train_batch = 2
-nf1 = 3
-sy = 4
-sx = 4
-
-x = sample(train_batch,sy,sx,nf1)
-
-x_tr = np.transpose(x,(0,3,1,2))
-
-y = get_sum_2x2(x_tr,train_batch,nf1,sy,sx)
-
-print x_tr
-print y
-
+with tf.Session() as sess:
+	print np.shape(W_risa1.eval())

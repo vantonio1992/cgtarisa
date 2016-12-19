@@ -17,7 +17,7 @@ exec(open('extern_params.py').read())
 
 #gathering data from images
 
-net = '{}_{}_{} ({})'.format('CNN_ae',sy,fs1,timestamp())
+net = net_name('CNN_ae',sy,fs1,time)
 
 train_dict = {}
 train_data = []
@@ -74,13 +74,13 @@ sess.run(init)
 print("({} simulation)".format(net,sy,sx))
 
 if switch == 1:
-    saver.restore(sess, "Weights/{}_weights.ckpt".format(net))
+    saver.restore(sess, "Weights/weights_{}.ckpt".format(net))
 
 
 error_list = []
-for i in range(maxiter):
+for i in range(ae_maxiter):
     batch_xs = get_batch_x(train_data,train_batch)
-    if i%moditer == 0:
+    if i%ae_moditer == 0:
         train_error = norm.eval(feed_dict = {x_image: batch_xs, keep_prob: 1.0})
         error_list.append(train_error)
         print("step %d, training error %g"%(i, train_error))

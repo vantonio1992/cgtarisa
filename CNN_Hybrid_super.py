@@ -1,4 +1,4 @@
-#standard packages
+s#standard packages
 
 from PIL import Image
 
@@ -16,9 +16,11 @@ exec(open('extern_params.py').read())
 
 #gathering data from images
 
-net = net_name('CNN_super',sy,fs1,time)
+net = net_name('CNN_Hybrid_super',sy,fs1,time)
+
 
 train_data = get_data_super(training,classes,sy)
+
 
 
 #start of implementation
@@ -38,13 +40,13 @@ y_ = tf.placeholder(tf.float32, shape=[None, out_val])
 W_conv1 = weight_variable([fs1, fs1, nl, nf1])
 b_conv1 = bias_variable([nf1])
 h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
-h_pool1 = max_pool_2x2(h_conv1)
+h_pool1 = tf.placeholder(tf.float32, [None,sy/2,sx/2,nf1])
 
 #conv1 and pooling layer
 W_conv2 = weight_variable([fs2, fs2, nf1, nf2])
 b_conv2 = bias_variable([nf2])
 h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
-h_pool2 = max_pool_2x2(h_conv2)
+h_pool2 = tf.placeholder(tf.float32, [None,sy/4,sx/4,nf2])
 
 #densely-connected layer
 W_fc1 = weight_variable([sy/4 * sx/4 * nf2, 1024])
@@ -91,7 +93,7 @@ sess.run(init)
 print("({} simulation)".format(net))
 
 if switch == 1:
-    saver.restore(sess, "Weights/weights_{}.ckpt".format(net))
+    saver.restore(sess, "Weights/{}_weights.ckpt".format(net))
 
 
 error_list = []
@@ -101,11 +103,17 @@ correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y_,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 for i in range(super_maxiter):
     batch_xs, batch_ys = get_batch(train_data,train_batch)
+    #mean-pooling 1
+    pre_h_pool1 = h_conv1.eval(feed_dict = {x_image: batch_xs})
+    h_pool1_np = mean_pool_2x2(pre_h_pool1,train_batch,sy,sx,nf1)
+    #mean-pooling 2
+    pre_h_pool2 = h_conv2.eval(feed_dict = {h_pool1: h_pool1_np})
+    h_pool2_np = mean_pool_2x2(pre_h_pool2,train_batch,sy/2,sx/2,nf2)
     if i%super_moditer == 0:
-        train_accuracy = accuracy.eval(feed_dict={x_image: batch_xs, y_: batch_ys, keep_prob: 1.0})
+        train_accuracy = accuracy.eval(feed_dict={h_pool2: h_pool2_np, y_: batch_ys, keep_prob: 1.0})
         error_list.append(train_accuracy)
         print("step %d, training accuracy %g"%(i, train_accuracy))
-    train_step.run(feed_dict={x_image: batch_xs, y_: batch_ys, keep_prob: 0.5})
+    train_step.run(feed_dict={h_pool2: h_pool2_np, y_: batch_ys, keep_prob: 0.5})
 
 error_file = open("Errors/error_{}.txt".format(net), 'w')
 
@@ -115,20 +123,45 @@ error_file.close
 
 #cross-validation
 print("start testing")
+test_dict = {}
+test_data = []
 
+for image in images:
+    one_hot = np.zeros(3)
+    one_hot[images.index(image)] = 1
 
-test_data = get_data_super(testing,classes,sy)
+    for n in range(test_f):
+        test_list = get_slice('{}/{}'.format(testing, image), '{}{}.jpeg'.format(image,n), sx)
+        test_dict['{}{}'.format(image,n)] = test_list["subregions"]
 
-x_test, y_test = get_batch_grouped(test_data, class_batch, out_val)
+        for row in test_dict['{}{}'.format(image,n)]:
+            for img in test_dict['{}{}'.format(image,n)][row]:
+                test_data.append((img/float(255),one_hot))
 
-y_predict = y_conv_max.eval(feed_dict={x_image: x_test, y_: y_test, keep_prob: 1.0})
-y_actual = y_max.eval(feed_dict={y_: y_test})
+test_data = np.array(test_data)
 
+x_test, y_test = get_batch_grouped(test_data,class_batch, out_val)
+
+test_h_pool1 = h_conv1.eval(feed_dict = {x_image: x_test})
+h_pool1_post = mean_pool_2x2(test_h_pool1,test_batch,sy,sx,nf1)
+
+#mean-pooling 2
+test_h_pool2 = h_conv2.eval(feed_dict = {h_pool1: h_pool1_post})
+
+h_pool2_post = mean_pool_2x2(test_h_pool2,test_batch,sy/2,sx/2,nf2)
+
+y_predict = y_conv_max.eval(feed_dict={h_pool2: h_pool2_post, y_: y_test, keep_prob: 1.0})
+# y_actual = y_max.eval(feed_dict={y_: y_test})
 
 #conf_matrix
-conf_matrix = conf_matrix(y_predict,classes,class_batch)
+conf_matrix = {}
+for i in range(out_val):
+    row = [0,0,0]
+    for j in y_predict[class_batch*i:class_batch*(i+1)]:
+        row[j] += 1
+    conf_matrix[images[i]] = row
 
 print conf_matrix
 # print("test accuracy %g"%accuracy.eval(feed_dict={x_image: x_test, y_: y_test, keep_prob: 1.0}))
 
-saver.save(sess, "Weights/weights_{}.ckpt".format('CNN_super'))
+saver.save(sess, "Weights/{}_weights.ckpt".format(net))

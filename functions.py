@@ -31,19 +31,8 @@ def get_segments(pool_size, pools):
 
 	return np.int32(segment_ids)
 
-
-def get_slice(source, image, size):
-	img = cv2.imread("%s/%s" % (source,image))
-	ctr = 0
-	
-	if not os.path.exists("%s/%dpx" % (source, size)):
-		os.makedirs("%s/%dpx" % (source, size))
-		os.makedirs("%s/%dpx/%s" % (source, size, image))
-		ctr = 1
-	else:
-		if not os.path.exists("%s/%dpx/%s" % (source, size, image)):
-			os.makedirs("%s/%dpx/%s" % (source, size, image))
-			ctr = 1 #newly made folder
+def get_slice(image, size):
+	img = cv2.imread(image)
 
 	length = img.shape[0]
 	width = img.shape[1]
@@ -59,26 +48,69 @@ def get_slice(source, image, size):
 			new_image = img[(row*size):((row+1)*size),(column*size):((column+1)*size)]
 			image_list.append(new_image)
 
-			if ctr == 1:
-				#where to place subregions
-				cv2.imwrite("%s/%dpx/%s/sr(%d,%d).jpeg" % (source, size, image, row, column), new_image)
-
 		subregions["row %d" % (row)] = image_list
 
 	return {"subregions": subregions, "dimensions": [rows, columns, length, width]}
 
+def get_data_ae(source,classes,size):
+	train_data = []
+	out_val = len(classes)
 
+	for cl in classes:
+		f_source = source + cl
+		for name in os.listdir(f_source):
+			image = os.path.join(f_source,name)
+			if os.path.isfile(image):
+				img_list = get_slice(image, size)["subregions"]
 
+				for row in img_list:
+					for img in img_list[row]:
+						train_data.append(img/float(255))
+
+	return np.array(train_data)
+
+def get_data_super(source,classes,size):
+	train_data = []
+	out_val = len(classes)
+
+	for cl in classes:
+		one_hot = np.zeros(out_val)
+		one_hot[classes.index(cl)] = 1
+
+		f_source = source + cl
+		for name in os.listdir(f_source):
+			image = os.path.join(f_source,name)
+			if os.path.isfile(image):
+				img_list = get_slice(image, size)["subregions"]
+
+				for row in img_list:
+					for img in img_list[row]:
+						train_data.append((img/float(255),one_hot))
+
+	return np.array(train_data)
 
 #returns a pair (x,y) where x is input list, y is output list
+
+
 def get_batch(data, num):
 	x, y = zip(*random.sample(data,num))
+	return x,y
+
+def get_batch_grouped(data, num, out_val):
+	x = []
+	y = []
+	class_len = len(data)/3
+	for i in range(out_val):
+		x_, y_ = zip(*random.sample(data[class_len*i:class_len*(i+1)],num))
+		x.extend(x_)
+		y.extend(y_)
 	return x,y
 
 def get_batch_x(data, num):
 	return np.array(random.sample(data,num))
 
-def get_sum_2x2(x,train_batch,nf,sy,sx):
+def mean_pool_2x2(in_np,train_batch,sy,sx,nf):
+	x = np.transpose(in_np, (0,3,1,2))
 	new_x = []
 	for i in range(train_batch):
 		temp0 = []
@@ -87,11 +119,11 @@ def get_sum_2x2(x,train_batch,nf,sy,sx):
 			for k in range(0,sy,2):
 				temp2 = []
 				for l in range(0,sx,2):
-					temp2.append(np.sum(x[i,j,k:k+2,l:l+2]))
+					temp2.append(np.mean(x[i,j,k:k+2,l:l+2]))
 				temp1.append(temp2)
 			temp0.append(temp1)
 		new_x.append(temp0)
-	return np.array(new_x)
+	return np.transpose(np.array(new_x), (0,2,3,1))
 
 
 def conv2d(x, W):
@@ -112,11 +144,6 @@ def weight_variable(shape):
 def bias_variable(shape):
   initial = tf.constant(0.1, shape=shape)
   return tf.Variable(initial)
-  
-
-def timestamp():
-    time_cur = datetime.datetime.now()
-    return time_cur.strftime('%Y%m%d%H%M')
     
 
 def risa_segment_sum():
@@ -157,22 +184,45 @@ def showplot(input_rgb,output_rgb, sy, sx, train_batch, image_reco, in_type):
 	new_image[:,:] = group*255
 	
 	#plot
+	plt.subplots_adjust(wspace=0, hspace=0)
 	plt.subplot(211)
 	plt.title('Original Images ({}x{})'.format(sy,sx))
 	plt.imshow(orig_image, 'gray')
 	plt.xticks([]), plt.yticks([])
 
 	plt.subplot(212)
-	plt.title('New Images ({}x{})'.format(sy,sx))
+	plt.title('Reconstructed Images ({}x{})'.format(sy,sx))
 	plt.imshow(new_image, 'gray')
 	plt.xticks([]), plt.yticks([])
 
 	plt.savefig('Images/{}.png'.format(in_type))
-	plt.show()
+	# plt.show()
+
+
 
 def save_pickle(input_rgb, output_rgb):
+	# x = pickle.load(open('test.pkl' ,'rb'))
 	in_text = open('Sample/input_{}.pkl'.format(timestamp()), 'wb')
 	pickle.dump(input_rgb, in_text)
 
 	out_text = open('Sample/output_{}.pkl'.format(timestamp()), 'wb')
 	pickle.dump(output_rgb, out_text)
+
+def net_name(ae_type,sy,fs1,time):
+	if time == 1:
+		time_cur = datetime.datetime.now()
+		return '{}_{}_{}_{}'.format(ae_type,sy,fs1, time_cur.strftime('%Y%m%d%H%M'))
+	else:
+		return '{}_{}_{}'.format(ae_type,sy,fs1)
+
+
+def conf_matrix(y_predict,classes,class_batch):
+	conf_matrix = {}
+	out_val = len(classes)
+
+	for i in range(out_val):
+		conf_matrix[classes[i]] = [0,0,0]
+		for j in y_predict[class_batch*i:class_batch*(i+1)]:
+			conf_matrix[classes[i]][j] += 1
+
+	return conf_matrix
