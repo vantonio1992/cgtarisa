@@ -5,6 +5,7 @@ Weights/
 Sample/
 Images/
 *.pyc
+*.jpeg
 test.py
 test2.py
 test_file.txt
