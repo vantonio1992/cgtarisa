@@ -11,15 +11,20 @@ import datetime
 from functions import *
 
 
-
 exec(open('extern_params.py').read())
 
 #gathering data from images
 
-net = net_name('Standard_super',sy,fs1,time)
+net = net_name('CNN_ae_e1',sy,fs1,time)
+params_list = {'W_conv1',
+			   'b_conv1',
+			   'W_conv2',
+			   'b_conv2'
+			  }
+
+params_dict = load_params(net,params_list)
 
 train_data = get_data_super(training,classes,sy)
-
 
 
 #start of implementation
@@ -33,11 +38,24 @@ x_image = tf.placeholder(tf.float32, [None,sy,sx,nl])
 y_ = tf.placeholder(tf.float32, shape=[None, out_val])
 
 
+##conv, pooling, conv
+
+#conv1 and pooling layer
+W_conv1 = params_dict['W_conv1']
+b_conv1 = params_dict['b_conv1']
+h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
+h_pool1 = max_pool_2x2(h_conv1)
+
+#conv2 and pooling layer
+W_conv2 = params_dict['W_conv2']
+b_conv2 = params_dict['b_conv2']
+h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+
 #densely-connected layer
-W_fc1 = weight_variable([sy * sx * nl, 1024])
+W_fc1 = weight_variable([sy/2 * sx/2 * nf2, 1024])
 b_fc1 = bias_variable([1024])
 
-h_pool_flat = tf.reshape(x_image, [-1, sy * sx * nl])
+h_pool_flat = tf.reshape(h_conv2, [-1, sy/2 * sx/2 * nf2])
 h_fc1 = tf.nn.relu(tf.matmul(h_pool_flat, W_fc1) + b_fc1)
 
 
@@ -78,7 +96,7 @@ sess.run(init)
 print("({} simulation)".format(net))
 
 if switch == 1:
-    saver.restore(sess, "Weights/weights_{}.ckpt".format(net))
+    saver.restore(sess, "Weights/{}_weights.ckpt".format(net))
 
 
 error_list = []
@@ -94,7 +112,7 @@ for i in range(super_maxiter):
         print("step %d, training accuracy %g"%(i, train_accuracy))
     train_step.run(feed_dict={x_image: batch_xs, y_: batch_ys, keep_prob: 0.5})
 
-error_file = open("Errors/error_{}.txt".format(net), 'w')
+error_file = open("Errors/{}_error.txt".format(net), 'w')
 
 for error in error_list:
     error_file .write("{}\n".format(error))
@@ -106,14 +124,16 @@ print("start testing")
 
 test_data = get_data_super(testing,classes,sy)
 
-x_test, y_test = get_batch_grouped(test_data,class_batch,out_val)
+x_test, y_test = get_batch_grouped(test_data, class_batch, out_val)
 
 y_predict = y_conv_max.eval(feed_dict={x_image: x_test, y_: y_test, keep_prob: 1.0})
-# y_actual = y_max.eval(feed_dict={y_: y_test})
+y_actual = y_max.eval(feed_dict={y_: y_test})
+
 
 #conf_matrix
+conf_matrix = conf_matrix(y_predict,classes,class_batch)
 
-print conf_matrix(y_predict,classes,class_batch)
-# print("test accuracy %g"%accuracy.eval(feed_dict={x_image: x_test, y_: y_test, keep_prob: 1.0}))
+print conf_matrix
+print("test accuracy %g"%accuracy.eval(feed_dict={x_image: x_test, y_: y_test, keep_prob: 1.0}))
 
-saver.save(sess, "Weights/weights_{}.ckpt".format(net))
+saver.save(sess, "Weights/{}_weights.ckpt".format('CNN_super'))

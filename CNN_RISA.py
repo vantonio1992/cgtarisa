@@ -88,7 +88,7 @@ sess.run(init)
 print("({} simulation)".format(net,sy,sx))
 
 if switch == 1:
-    saver.restore(sess, "Weights/weights_{}.ckpt".format(net))
+    saver.restore(sess, "Weights/{}_weights.ckpt".format(net))
 
 
 error_list = []
@@ -101,24 +101,19 @@ for i in range(ae_maxiter):
     train_step.run(feed_dict={x_image: batch_xs, keep_prob: 0.5})
 
 
-error_file = open("Errors/error_{}.txt".format(net), 'w')
+error_file = open("Errors/{}_error.txt".format(net), 'w')
 
 for error in error_list:
     error_file .write("{}\n".format(error))
 error_file.close
 
 
-W_risa1 = W_risa1.eval()
-b_risa1 = b_risa1.eval()
-RISA_W1 = open('Sample/RISA_W1.pkl', 'wb')
-pickle.dump(W_risa1, RISA_W1)
-RISA_b1 = open('Sample/RISA_b1.pkl', 'wb')
-pickle.dump(b_risa1, RISA_b1)
+params_dict = {'W_risa1': W_risa1.eval(),
+			   'b_risa1': b_risa1.eval()
+			  }
+save_params(net,params_dict)
 
-RISA_W1.close()
-RISA_b1.close()
-
-saver.save(sess, "Weights/weights_{}.ckpt".format(net))
+saver.save(sess, "Weights/{}_weights.ckpt".format(net))
 
 #confirm plotting
 # print('start reconstruction')

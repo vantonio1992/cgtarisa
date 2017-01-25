@@ -10,10 +10,10 @@ import pickle, random
 import datetime
 from functions import *
 
-RISA_W1 = open('Sample/RISA_W1.pkl', 'rb')
-RISA_b1 = open('Sample/RISA_b1.pkl', 'rb')
-W_risa1 = tf.constant(pickle.load(RISA_W1))
-b_risa1 = tf.constant(pickle.load(RISA_b1))
+exec(open('extern_params.py').read())
 
-with tf.Session() as sess:
-	print np.shape(W_risa1.eval())
+#gathering data from images
+
+train_data = get_data_super(testing,classes,sy)
+
+print np.shape(train_data)

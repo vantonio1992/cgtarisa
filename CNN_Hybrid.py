@@ -18,19 +18,7 @@ exec(open('extern_params.py').read())
 #gathering data from images
 net = net_name('CNN_Hybrid',sy,fs1,time)
 
-train_dict = {}
-train_data = []
-
-for image in images:
-    for n in range(train_f):
-        train_list = get_slice('{}/{}'.format(training, image), '{}{}.jpeg'.format(image,n), sx)
-        train_dict['{}{}'.format(image,n)] = train_list["subregions"]
-
-        for row in train_dict['{}{}'.format(image,n)]:
-            for img in train_dict['{}{}'.format(image,n)][row]:
-                train_data.append(img/float(255))
-
-train_data = np.array(train_data)
+train_data = get_data_ae(training,classes,sy)
 
 
 #start of implementation

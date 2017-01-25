@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import os, math, datetime
 import numpy as np
 import tensorflow as tf
+import pickle
 #image  = image file, size = desired size of subregion (32, in our case), path = where to place subregions (optional)
 
 def sample(train_batch,sy,sx,nl):
@@ -181,7 +182,7 @@ def showplot(input_rgb,output_rgb, sy, sx, train_batch, image_reco, in_type):
 		group = np.concatenate((group,np.array([output_rgb[i]])), axis = 2)
 
 	new_image = np.zeros((sy,sx*image_reco, 3), np.uint8)
-	new_image[:,:] = group*255
+	new_image[:,:] = group
 	
 	#plot
 	plt.subplots_adjust(wspace=0, hspace=0)
@@ -199,6 +200,17 @@ def showplot(input_rgb,output_rgb, sy, sx, train_batch, image_reco, in_type):
 	# plt.show()
 
 
+def save_params(net,params_dict):
+	for param in params_dict:
+		in_text = open('Params/{}_{}.pkl'.format(net,param), 'wb')
+		pickle.dump(params_dict[param], in_text)
+
+def load_params(net,params_list):
+	params_dict = {}
+	for param in params_list:
+		out_text = open('Params/{}_{}.pkl'.format(net,param), 'rb')
+		params_dict[param] = tf.constant(pickle.load(out_text))
+	return params_dict
 
 def save_pickle(input_rgb, output_rgb):
 	# x = pickle.load(open('test.pkl' ,'rb'))
@@ -226,3 +238,30 @@ def conf_matrix(y_predict,classes,class_batch):
 			conf_matrix[classes[i]][j] += 1
 
 	return conf_matrix
+
+def filters():
+	dim = 2
+
+	input_img = pickle.load(open( "Sample/test_in.pkl", "rb" ))
+	filters = pickle.load(open( "Sample/test_out.pkl", "rb" ))
+
+	n, sy, sx, nf = np.shape(filters)
+
+	filters = np.transpose(filters[0],(2,0,1))
+	fil_sample = random.sample(filters*255, dim**2)
+
+
+	# plt.subplots_adjust(wspace=0, hspace=0)
+	plt.figure()
+	for i in range(dim):
+		for j in range(dim):
+			index = i*dim + j
+			fil_image = np.zeros((sy,sx), np.uint8)
+			fil_image[:,:] = np.array(fil_sample[index])
+			print (dim**2,i+1,j+1)
+
+			plt.subplot(dim**2,i+1,j+1)
+			plt.title('Filter {}'.format(index))
+			plt.imshow(fil_image, 'gray')
+			plt.xticks([]), plt.yticks([])
+	plt.show()

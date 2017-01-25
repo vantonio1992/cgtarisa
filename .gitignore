@@ -4,6 +4,8 @@ Errors/
 Weights/
 Sample/
 Images/
+Params/
+Results/
 *.pyc
 *.jpeg
 test.py
